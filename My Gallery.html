@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>My Gallery</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        /* General Reset */
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            background: url('My Gallery_files/background.jpg') no-repeat center center fixed;
+            background-size: cover;
+            color: #fff;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        header {
+            margin-top: 30px;
+            text-align: center;
+        }
+
+        header h1 {
+            font-size: 36px;
+            background-color: rgba(0, 0, 0, 0.5);
+            padding: 10px 20px;
+            border-radius: 10px;
+        }
+
+        nav {
+            display: flex;
+            justify-content: center;
+            gap: 40px;
+            margin-top: 100px;
+            flex-wrap: wrap;
+        }
+
+        nav a {
+            text-decoration: none;
+            text-align: center;
+        }
+
+        nav img {
+            width: 150px;
+            height: auto;
+            transition: transform 0.3s ease;
+        }
+
+        nav img:hover {
+            transform: scale(1.1);
+        }
+
+        footer {
+            margin-top: auto;
+            padding: 20px;
+            text-align: center;
+            font-size: 14px;
+            color: #ddd;
+        }
+
+        @media (max-width: 600px) {
+            nav img {
+                width: 100px;
+            }
+
+            header h1 {
+                font-size: 24px;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>Welcome to My Gallery</h1>
+    </header>
+
+    <nav>
+        <a href="photos/index.htm">
+            <img src="My Gallery_files/Photos.gif" alt="Browse Photo Gallery">
+        </a>
+        <a href="videos/index.htm">
+            <img src="My Gallery_files/Videos.gif" alt="Browse Video Gallery">
+        </a>
+        <a href="upload/index.htm">
+            <img src="My Gallery_files/Upload.gif" alt="Upload Your Content">
+        </a>
+    </nav>
+
+    <footer>
+        &copy; 2025 My Gallery. All rights reserved.
+    </footer>
+
+</body>
+</html>
