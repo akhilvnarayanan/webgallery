@@ -4,6 +4,11 @@ import os
 import sys
 import cgi
 import json
+import logging
+
+# Configure logging to see errors in the console
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 PORT = 5000
 HOST = "0.0.0.0"
@@ -18,13 +23,17 @@ def get_metadata():
         try:
             with open(METADATA_FILE, 'r') as f:
                 return json.load(f)
-        except:
+        except Exception as e:
+            logger.error(f"Error reading metadata: {e}")
             return {}
     return {}
 
 def save_metadata(metadata):
-    with open(METADATA_FILE, 'w') as f:
-        json.dump(metadata, f)
+    try:
+        with open(METADATA_FILE, 'w') as f:
+            json.dump(metadata, f)
+    except Exception as e:
+        logger.error(f"Error saving metadata: {e}")
 
 class NoCacheHandler(http.server.SimpleHTTPRequestHandler):
     def end_headers(self):
@@ -61,6 +70,7 @@ class NoCacheHandler(http.server.SimpleHTTPRequestHandler):
                 self.end_headers()
                 self.wfile.write(json.dumps(media_list).encode())
             except Exception as e:
+                logger.error(f"Error listing media: {e}")
                 self.send_response(500)
                 self.end_headers()
                 self.wfile.write(str(e).encode())
@@ -70,45 +80,57 @@ class NoCacheHandler(http.server.SimpleHTTPRequestHandler):
     def do_POST(self):
         if self.path == '/upload':
             try:
-                # Use FieldStorage with a limit to avoid some issues with large files
-                # or missing boundaries in some cases. 
-                # Also ensure we handle the binary stream correctly.
+                # Log headers for debugging
+                logger.info(f"Upload request received. Content-Type: {self.headers.get('Content-Type')}")
+                
+                # Check for multipart/form-data
+                content_type = self.headers.get('Content-Type', '')
+                if 'multipart/form-data' not in content_type:
+                    logger.error("Invalid Content-Type for upload")
+                    self.send_response(400)
+                    self.end_headers()
+                    self.wfile.write(b"Invalid Content-Type")
+                    return
+
+                # Manually parse using cgi
                 form = cgi.FieldStorage(
                     fp=self.rfile,
                     headers=self.headers,
                     environ={'REQUEST_METHOD': 'POST',
-                             'CONTENT_TYPE': self.headers['Content-Type'],
+                             'CONTENT_TYPE': content_type,
                              }
                 )
 
-                if 'file' in form:
-                    file_item = form['file']
+                file_field = form['file'] if 'file' in form else None
+                
+                if file_field is not None and file_field.filename:
+                    filename = os.path.basename(file_field.filename)
                     custom_name = form.getvalue('customName', '').strip()
                     
-                    if file_item.filename:
-                        fn = os.path.basename(file_item.filename)
-                        # Ensure filename is unique or handle collisions if needed
-                        # For now, just write it.
-                        with open(os.path.join(UPLOAD_DIR, fn), 'wb') as f:
-                            f.write(file_item.file.read())
-                        
-                        if custom_name:
-                            metadata = get_metadata()
-                            metadata[fn] = custom_name
-                            save_metadata(metadata)
-                        
-                        self.send_response(200)
-                        self.send_header('Content-type', 'text/plain')
-                        self.end_headers()
-                        self.wfile.write(b"Success")
-                        return
-                
-                print("Upload failed: 'file' not in form or filename missing")
-                self.send_response(400)
-                self.end_headers()
-                self.wfile.write(b"Failed to upload: No file provided")
+                    logger.info(f"Saving file: {filename} with custom name: {custom_name}")
+                    
+                    file_path = os.path.join(UPLOAD_DIR, filename)
+                    with open(file_path, 'wb') as f:
+                        f.write(file_field.file.read())
+                    
+                    if custom_name:
+                        metadata = get_metadata()
+                        metadata[filename] = custom_name
+                        save_metadata(metadata)
+                    
+                    self.send_response(200)
+                    self.send_header('Content-type', 'text/plain')
+                    self.end_headers()
+                    self.wfile.write(b"Success")
+                    logger.info("Upload successful")
+                    return
+                else:
+                    logger.error("No file found in the request")
+                    self.send_response(400)
+                    self.end_headers()
+                    self.wfile.write(b"No file provided")
             except Exception as e:
-                print(f"Upload exception: {e}")
+                logger.error(f"Upload exception: {e}", exc_info=True)
                 self.send_response(500)
                 self.end_headers()
                 self.wfile.write(f"Server error: {e}".encode())
@@ -120,14 +142,14 @@ socketserver.TCPServer.allow_reuse_address = True
 def run_server():
     try:
         with socketserver.TCPServer((HOST, PORT), NoCacheHandler) as httpd:
-            print(f"Serving at http://{HOST}:{PORT}")
+            logger.info(f"Serving at http://{HOST}:{PORT}")
             httpd.serve_forever()
     except OSError as e:
         if e.errno == 98:
-            print(f"Port {PORT} is busy, server is likely already running.")
+            logger.warning(f"Port {PORT} is busy, server is likely already running.")
             sys.exit(0)
         else:
-            print(f"Server error: {e}")
+            logger.error(f"Server error: {e}")
             sys.exit(1)
 
 if __name__ == "__main__":

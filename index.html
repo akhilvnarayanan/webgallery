@@ -345,7 +345,8 @@
             closeUploadModal();
 
             const formData = new FormData();
-            formData.append('file', selectedFile);
+            // Ensure the field name is 'file' as expected by the server
+            formData.append('file', selectedFile, selectedFile.name);
             if (customName) formData.append('customName', customName);
 
             fetch('/upload', {
