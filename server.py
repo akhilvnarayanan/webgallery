@@ -1,10 +1,15 @@
 import http.server
 import socketserver
-import socket
+import os
 import sys
+import cgi
 
 PORT = 5000
 HOST = "0.0.0.0"
+UPLOAD_DIR = "uploads"
+
+if not os.path.exists(UPLOAD_DIR):
+    os.makedirs(UPLOAD_DIR)
 
 class NoCacheHandler(http.server.SimpleHTTPRequestHandler):
     def end_headers(self):
@@ -13,7 +18,37 @@ class NoCacheHandler(http.server.SimpleHTTPRequestHandler):
         self.send_header('Expires', '0')
         super().end_headers()
 
-# Allow port reuse to avoid "Address already in use" errors
+    def do_POST(self):
+        if self.path == '/upload':
+            form = cgi.FieldStorage(
+                fp=self.rfile,
+                headers=self.headers,
+                environ={'REQUEST_METHOD': 'POST',
+                         'CONTENT_TYPE': self.headers['Content-Type'],
+                         }
+            )
+
+            if 'file' in form:
+                file_item = form['file']
+                if file_item.filename:
+                    # Clean filename to prevent path traversal
+                    fn = os.path.basename(file_item.filename)
+                    with open(os.path.join(UPLOAD_DIR, fn), 'wb') as f:
+                        f.write(file_item.file.read())
+                    
+                    self.send_response(200)
+                    self.send_header('Content-type', 'text/html')
+                    self.end_headers()
+                    self.wfile.write(b"Success")
+                    return
+
+            self.send_response(400)
+            self.end_headers()
+            self.wfile.write(b"Failed to upload")
+        else:
+            super().do_POST()
+
+# Allow port reuse
 socketserver.TCPServer.allow_reuse_address = True
 
 def run_server():
@@ -24,8 +59,6 @@ def run_server():
     except OSError as e:
         if e.errno == 98:
             print(f"Port {PORT} is busy, server is likely already running.")
-            # Keep the process alive if we think the server is running elsewhere
-            # to prevent workflow from flapping, or just exit gracefully
             sys.exit(0)
         else:
             print(f"Server error: {e}")
