@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Photography Gallery | My Portfolio</title>
+    <title>Gallery | My Portfolio</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&family=Playfair+Display:wght@700&display=swap" rel="stylesheet">
@@ -58,7 +58,7 @@
 
         .back-link {
             position: relative;
-            z-index: 1;
+            z-index: 10;
             display: inline-block;
             margin-bottom: 20px;
             color: var(--text-main);
@@ -91,31 +91,133 @@
 
         .gallery-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
-            gap: 20px;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 25px;
         }
 
         .gallery-item {
             background: var(--glass-bg);
             backdrop-filter: blur(10px);
             border: 1px solid var(--glass-border);
-            border-radius: 15px;
+            border-radius: 20px;
             overflow: hidden;
-            aspect-ratio: 1;
-            transition: transform 0.3s ease;
+            transition: all 0.4s cubic-bezier(0.165, 0.84, 0.44, 1);
+            cursor: pointer;
+            position: relative;
         }
 
         .gallery-item:hover {
-            transform: scale(1.02);
+            transform: translateY(-10px);
+            border-color: rgba(255,255,255,0.3);
+            box-shadow: 0 15px 30px rgba(0,0,0,0.3);
         }
 
-        .gallery-item img {
+        .media-container {
+            width: 100%;
+            aspect-ratio: 16/10;
+            overflow: hidden;
+            background: black;
+            position: relative;
+        }
+
+        .media-container img, .media-container video {
             width: 100%;
             height: 100%;
             object-fit: cover;
+            transition: transform 0.5s ease;
+        }
+
+        .gallery-item:hover .media-container img {
+            transform: scale(1.05);
+        }
+
+        .video-overlay {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 50px;
+            height: 50px;
+            background: rgba(255,255,255,0.2);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            backdrop-filter: blur(5px);
+        }
+
+        .item-info {
+            padding: 15px 20px;
+        }
+
+        .item-info h3 {
+            font-size: 1rem;
+            font-weight: 600;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        /* Lightbox Styles */
+        #lightbox {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.95);
+            z-index: 1000;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            backdrop-filter: blur(10px);
+        }
+
+        .lightbox-close {
+            position: absolute;
+            top: 30px;
+            right: 30px;
+            font-size: 2rem;
+            color: white;
+            cursor: pointer;
+            z-index: 1001;
+            width: 50px;
+            height: 50px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(255,255,255,0.1);
+            border-radius: 50%;
+        }
+
+        .lightbox-content {
+            max-width: 90%;
+            max-height: 80vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .lightbox-content img, .lightbox-content video {
+            max-width: 100%;
+            max-height: 80vh;
+            box-shadow: 0 0 50px rgba(0,0,0,0.5);
+            border-radius: 10px;
+        }
+
+        .lightbox-caption {
+            margin-top: 20px;
+            text-align: center;
+        }
+
+        .lightbox-caption h2 {
+            font-family: 'Playfair Display', serif;
+            font-size: 1.5rem;
         }
 
         .no-images {
+            grid-column: 1/-1;
             text-align: center;
             padding: 100px 20px;
             font-size: 1.2rem;
@@ -142,15 +244,25 @@
 
     <header>
         <a href="../index.html" class="back-link">← Back to Home</a>
-        <h1>Photography</h1>
+        <h1 id="gallery-title">Gallery</h1>
     </header>
 
     <main>
         <div id="gallery" class="gallery-grid">
-            <!-- Images will be loaded here -->
-            <div class="no-images">Loading gallery...</div>
+            <div class="no-images">Discovering your masterpieces...</div>
         </div>
     </main>
+
+    <!-- Lightbox -->
+    <div id="lightbox" onclick="closeLightbox(event)">
+        <div class="lightbox-close" onclick="closeLightbox(event)">&times;</div>
+        <div class="lightbox-content" onclick="event.stopPropagation()">
+            <!-- Content loaded dynamically -->
+        </div>
+        <div class="lightbox-caption">
+            <h2 id="lightbox-title"></h2>
+        </div>
+    </div>
 
     <footer>
         &copy; 2026 MY GALLERY PORTFOLIO. ALL RIGHTS RESERVED.
@@ -160,23 +272,61 @@
         async function loadGallery() {
             const gallery = document.getElementById('gallery');
             try {
-                const response = await fetch('/list-uploads');
-                const files = await response.json();
+                const response = await fetch('/list-media');
+                const media = await response.json();
                 
-                if (files.length === 0) {
-                    gallery.innerHTML = '<div class="no-images" style="grid-column: 1/-1;">No photos uploaded yet.</div>';
+                if (media.length === 0) {
+                    gallery.innerHTML = '<div class="no-images">No content uploaded yet. Use the Submit button to start your gallery.</div>';
                     return;
                 }
 
-                gallery.innerHTML = files.map(file => `
-                    <div class="gallery-item">
-                        <img src="/uploads/${file}" alt="${file}" loading="lazy">
+                gallery.innerHTML = media.map(item => `
+                    <div class="gallery-item" onclick="openLightbox('${item.filename}', '${item.type}', '${item.displayName.replace(/'/g, "\\'")}')">
+                        <div class="media-container">
+                            ${item.type === 'image' 
+                                ? `<img src="/uploads/${item.filename}" alt="${item.displayName}" loading="lazy">`
+                                : `<video src="/uploads/${item.filename}#t=0.5" muted preload="metadata"></video>
+                                   <div class="video-overlay"><svg width="20" height="20" viewBox="0 0 24 24" fill="white"><path d="M8 5v14l11-7z"/></svg></div>`
+                            }
+                        </div>
+                        <div class="item-info">
+                            <h3>${item.displayName}</h3>
+                        </div>
                     </div>
                 `).join('');
             } catch (error) {
                 console.error('Error loading gallery:', error);
-                gallery.innerHTML = '<div class="no-images" style="grid-column: 1/-1;">Error loading images. Please try again later.</div>';
+                gallery.innerHTML = '<div class="no-images">Could not load the gallery. Please refresh the page.</div>';
             }
+        }
+
+        function openLightbox(filename, type, displayName) {
+            const lightbox = document.getElementById('lightbox');
+            const content = lightbox.querySelector('.lightbox-content');
+            const title = document.getElementById('lightbox-title');
+            
+            title.textContent = displayName;
+            
+            if (type === 'image') {
+                content.innerHTML = `<img src="/uploads/${filename}" alt="${displayName}">`;
+            } else {
+                content.innerHTML = `<video src="/uploads/${filename}" controls autoplay style="max-width: 100%;"></video>`;
+            }
+            
+            lightbox.style.display = 'flex';
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closeLightbox(e) {
+            const lightbox = document.getElementById('lightbox');
+            const content = lightbox.querySelector('.lightbox-content');
+            
+            // Stop video if playing
+            const video = content.querySelector('video');
+            if (video) video.pause();
+            
+            lightbox.style.display = 'none';
+            document.body.style.overflow = 'auto';
         }
 
         loadGallery();
