@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Photos | My Portfolio</title>
+    <title>Videos | My Portfolio</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&family=Playfair+Display:wght@700&display=swap" rel="stylesheet">
@@ -120,11 +120,25 @@
             position: relative;
         }
 
-        .media-container img {
+        .media-container video {
             width: 100%;
             height: 100%;
             object-fit: cover;
-            transition: transform 0.5s ease;
+        }
+
+        .video-overlay {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 50px;
+            height: 50px;
+            background: rgba(255,255,255,0.2);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            backdrop-filter: blur(5px);
         }
 
         .item-info {
@@ -155,19 +169,14 @@
             backdrop-filter: blur(10px);
         }
 
-        .lightbox-controls {
+        .lightbox-close {
             position: absolute;
             top: 30px;
             right: 30px;
-            display: flex;
-            gap: 15px;
-            z-index: 1001;
-        }
-
-        .control-btn {
-            font-size: 1.5rem;
+            font-size: 2rem;
             color: white;
             cursor: pointer;
+            z-index: 1001;
             width: 50px;
             height: 50px;
             display: flex;
@@ -175,12 +184,6 @@
             justify-content: center;
             background: rgba(255,255,255,0.1);
             border-radius: 50%;
-            user-select: none;
-            transition: background 0.3s;
-        }
-
-        .control-btn:hover {
-            background: rgba(255,255,255,0.2);
         }
 
         .lightbox-content {
@@ -189,21 +192,13 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            overflow: hidden;
-            cursor: grab;
         }
 
-        .lightbox-content:active {
-            cursor: grabbing;
-        }
-
-        .lightbox-content img {
+        .lightbox-content video {
             max-width: 100%;
             max-height: 80vh;
             box-shadow: 0 0 50px rgba(0,0,0,0.5);
             border-radius: 10px;
-            transition: transform 0.3s cubic-bezier(0.165, 0.84, 0.44, 1);
-            transform-origin: center;
         }
 
         .lightbox-caption {
@@ -244,7 +239,7 @@
 
     <header>
         <a href="../index.html" class="back-link">← Back to Home</a>
-        <h1>Photos</h1>
+        <h1>Videos</h1>
     </header>
 
     <main>
@@ -255,13 +250,8 @@
 
     <!-- Lightbox -->
     <div id="lightbox" onclick="closeLightbox(event)">
-        <div class="lightbox-controls">
-            <div class="control-btn" onclick="zoomOut(event)">−</div>
-            <div class="control-btn" onclick="zoomIn(event)">+</div>
-            <div class="control-btn" onclick="resetZoom(event)">↺</div>
-            <div class="control-btn" onclick="closeLightbox(event)">&times;</div>
-        </div>
-        <div class="lightbox-content" id="lightbox-container" onclick="event.stopPropagation()">
+        <div class="lightbox-close" onclick="closeLightbox(event)">&times;</div>
+        <div class="lightbox-content" onclick="event.stopPropagation()">
             <!-- Content loaded dynamically -->
         </div>
         <div class="lightbox-caption">
@@ -274,23 +264,22 @@
     </footer>
 
     <script>
-        let currentZoom = 1;
-
         async function loadGallery() {
             const gallery = document.getElementById('gallery');
             try {
-                const response = await fetch('/list-media?type=image');
+                const response = await fetch('/list-media?type=video');
                 const media = await response.json();
                 
                 if (media.length === 0) {
-                    gallery.innerHTML = '<div class="no-images">No photos uploaded yet.</div>';
+                    gallery.innerHTML = '<div class="no-images">No videos uploaded yet.</div>';
                     return;
                 }
 
                 gallery.innerHTML = media.map(item => `
                     <div class="gallery-item" onclick="openLightbox('${item.filename}', '${item.displayName.replace(/'/g, "\\'")}')">
                         <div class="media-container">
-                            <img src="/uploads/${item.filename}" alt="${item.displayName}" loading="lazy">
+                            <video src="/uploads/${item.filename}#t=0.5" muted preload="metadata"></video>
+                            <div class="video-overlay"><svg width="20" height="20" viewBox="0 0 24 24" fill="white"><path d="M8 5v14l11-7z"/></svg></div>
                         </div>
                         <div class="item-info">
                             <h3>${item.displayName}</h3>
@@ -309,10 +298,7 @@
             const title = document.getElementById('lightbox-title');
             
             title.textContent = displayName;
-            content.innerHTML = `<img src="/uploads/${filename}" alt="${displayName}" id="lightbox-img">`;
-            
-            currentZoom = 1;
-            updateZoom();
+            content.innerHTML = `<video src="/uploads/${filename}" controls autoplay style="max-width: 100%;"></video>`;
             
             lightbox.style.display = 'flex';
             document.body.style.overflow = 'hidden';
@@ -320,33 +306,12 @@
 
         function closeLightbox(e) {
             const lightbox = document.getElementById('lightbox');
+            const content = lightbox.querySelector('.lightbox-content');
+            const video = content.querySelector('video');
+            if (video) video.pause();
+            
             lightbox.style.display = 'none';
             document.body.style.overflow = 'auto';
-        }
-
-        function zoomIn(e) {
-            e.stopPropagation();
-            currentZoom += 0.25;
-            updateZoom();
-        }
-
-        function zoomOut(e) {
-            e.stopPropagation();
-            if (currentZoom > 0.5) currentZoom -= 0.25;
-            updateZoom();
-        }
-
-        function resetZoom(e) {
-            e.stopPropagation();
-            currentZoom = 1;
-            updateZoom();
-        }
-
-        function updateZoom() {
-            const img = document.getElementById('lightbox-img');
-            if (img) {
-                img.style.transform = `scale(${currentZoom})`;
-            }
         }
 
         loadGallery();

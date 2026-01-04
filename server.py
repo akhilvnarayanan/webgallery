@@ -34,18 +34,23 @@ class NoCacheHandler(http.server.SimpleHTTPRequestHandler):
         super().end_headers()
 
     def do_GET(self):
-        if self.path == '/list-media':
+        if self.path.startswith('/list-media'):
             try:
                 metadata = get_metadata()
                 files = [f for f in os.listdir(UPLOAD_DIR) if os.path.isfile(os.path.join(UPLOAD_DIR, f))]
                 image_exts = ('.png', '.jpg', '.jpeg', '.gif', '.webp')
                 video_exts = ('.mp4', '.webm', '.ogg', '.mov')
                 
+                # Filter by type if requested
+                query_type = None
+                if 'type=image' in self.path: query_type = 'image'
+                elif 'type=video' in self.path: query_type = 'video'
+
                 media_list = []
                 for f in files:
                     ext = os.path.splitext(f)[1].lower()
                     m_type = 'image' if ext in image_exts else 'video' if ext in video_exts else None
-                    if m_type:
+                    if m_type and (query_type is None or m_type == query_type):
                         media_list.append({
                             'filename': f,
                             'type': m_type,
