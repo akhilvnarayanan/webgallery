@@ -2,10 +2,20 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>My Gallery</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Gallery | Professional Portfolio</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&family=Playfair+Display:wght@700&display=swap" rel="stylesheet">
     <style>
-        /* General Reset */
+        :root {
+            --glass-bg: rgba(255, 255, 255, 0.1);
+            --glass-border: rgba(255, 255, 255, 0.2);
+            --accent-color: #ffffff;
+            --text-main: #ffffff;
+            --text-muted: rgba(255, 255, 255, 0.7);
+        }
+
         * {
             box-sizing: border-box;
             margin: 0;
@@ -13,91 +23,179 @@
         }
 
         body {
-            font-family: Arial, sans-serif;
-            background: url('background.jpg') no-repeat center center fixed;
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(rgba(0,0,0,0.4), rgba(0,0,0,0.4)), url('background.jpg') no-repeat center center fixed;
             background-size: cover;
-            color: #fff;
+            color: var(--text-main);
             min-height: 100vh;
             display: flex;
             flex-direction: column;
-            align-items: center;
+            line-height: 1.6;
+        }
+
+        .overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: radial-gradient(circle at center, transparent 0%, rgba(0,0,0,0.3) 100%);
+            pointer-events: none;
+            z-index: 0;
         }
 
         header {
-            margin-top: 30px;
+            position: relative;
+            z-index: 1;
+            padding: 80px 20px 40px;
             text-align: center;
         }
 
         header h1 {
-            font-size: 36px;
-            background-color: rgba(0, 0, 0, 0.5);
-            padding: 10px 20px;
-            border-radius: 10px;
+            font-family: 'Playfair Display', serif;
+            font-size: clamp(2.5rem, 8vw, 4.5rem);
+            margin-bottom: 10px;
+            letter-spacing: -1px;
+            font-weight: 700;
+        }
+
+        header p {
+            font-size: 1.1rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 4px;
+            font-weight: 300;
+        }
+
+        main {
+            position: relative;
+            z-index: 1;
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 40px 20px;
         }
 
         nav {
-            display: flex;
-            justify-content: center;
-            gap: 40px;
-            margin-top: 100px;
-            flex-wrap: wrap;
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 30px;
+            max-width: 1000px;
+            width: 100%;
         }
 
-        nav a {
+        .nav-card {
             text-decoration: none;
-            text-align: center;
+            color: inherit;
+            background: var(--glass-bg);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid var(--glass-border);
+            border-radius: 20px;
+            padding: 40px 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            transition: all 0.4s cubic-bezier(0.165, 0.84, 0.44, 1);
+            position: relative;
+            overflow: hidden;
         }
 
-        nav img {
-            width: 150px;
-            height: auto;
-            transition: transform 0.3s ease;
+        .nav-card:hover {
+            transform: translateY(-10px);
+            background: rgba(255, 255, 255, 0.15);
+            border-color: rgba(255, 255, 255, 0.4);
+            box-shadow: 0 20px 40px rgba(0,0,0,0.3);
         }
 
-        nav img:hover {
+        .nav-card img {
+            width: 80px;
+            height: 80px;
+            object-fit: contain;
+            margin-bottom: 25px;
+            filter: brightness(0) invert(1); /* Makes colored gifs white for a cleaner look */
+            opacity: 0.9;
+            transition: transform 0.4s ease;
+        }
+
+        .nav-card:hover img {
             transform: scale(1.1);
         }
 
-        footer {
-            margin-top: auto;
-            padding: 20px;
-            text-align: center;
-            font-size: 14px;
-            color: #ddd;
+        .nav-card h2 {
+            font-size: 1.25rem;
+            font-weight: 600;
+            letter-spacing: 1px;
+            text-transform: uppercase;
         }
 
-        @media (max-width: 600px) {
-            nav img {
-                width: 100px;
-            }
+        .nav-card span {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            margin-top: 8px;
+            font-weight: 300;
+        }
 
-            header h1 {
-                font-size: 24px;
+        footer {
+            position: relative;
+            z-index: 1;
+            padding: 40px 20px;
+            text-align: center;
+            font-size: 0.9rem;
+            color: var(--text-muted);
+            letter-spacing: 1px;
+        }
+
+        @media (max-width: 850px) {
+            nav {
+                grid-template-columns: 1fr;
+                gap: 20px;
+                max-width: 400px;
             }
+            header { padding: 40px 20px; }
+            .nav-card { padding: 30px; flex-direction: row; gap: 20px; }
+            .nav-card img { margin-bottom: 0; width: 50px; height: 50px; }
+            .nav-card .info { text-align: left; }
         }
     </style>
 </head>
 <body>
+    <div class="overlay"></div>
 
     <header>
-        <h1>Welcome to My Gallery</h1>
+        <h1>My Gallery</h1>
+        <p>A Visual Experience</p>
     </header>
 
-    <nav>
-        <a href="photos/index.htm">
-            <img src="Photos.gif" alt="Browse Photo Gallery">
-        </a>
-        <a href="videos/index.htm">
-            <img src="Videos.gif" alt="Browse Video Gallery">
-        </a>
-        <a href="upload/index.htm">
-            <img src="Upload.gif" alt="Upload Your Content">
-        </a>
-    </nav>
+    <main>
+        <nav>
+            <a href="photos/index.htm" class="nav-card">
+                <img src="Photos.gif" alt="Photos">
+                <div class="info">
+                    <h2>Photography</h2>
+                    <span>View our collection</span>
+                </div>
+            </a>
+            <a href="videos/index.htm" class="nav-card">
+                <img src="Videos.gif" alt="Videos">
+                <div class="info">
+                    <h2>Cinematics</h2>
+                    <span>Motion gallery</span>
+                </div>
+            </a>
+            <a href="upload/index.htm" class="nav-card">
+                <img src="Upload.gif" alt="Upload">
+                <div class="info">
+                    <h2>Submit</h2>
+                    <span>Share your work</span>
+                </div>
+            </a>
+        </nav>
+    </main>
 
     <footer>
-        &copy; 2025 My Gallery. All rights reserved.
+        &copy; 2026 MY GALLERY PORTFOLIO. ALL RIGHTS RESERVED.
     </footer>
-
 </body>
 </html>
