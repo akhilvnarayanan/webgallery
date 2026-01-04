@@ -18,6 +18,26 @@ class NoCacheHandler(http.server.SimpleHTTPRequestHandler):
         self.send_header('Expires', '0')
         super().end_headers()
 
+    def do_GET(self):
+        if self.path == '/list-uploads':
+            try:
+                files = [f for f in os.listdir(UPLOAD_DIR) if os.path.isfile(os.path.join(UPLOAD_DIR, f))]
+                # Basic filter for images
+                image_extensions = ('.png', '.jpg', '.jpeg', '.gif', '.webp')
+                images = [f for f in files if f.lower().endswith(image_extensions)]
+                
+                import json
+                self.send_response(200)
+                self.send_header('Content-type', 'application/json')
+                self.end_headers()
+                self.wfile.write(json.dumps(images).encode())
+            except Exception as e:
+                self.send_response(500)
+                self.end_headers()
+                self.wfile.write(str(e).encode())
+        else:
+            super().do_GET()
+
     def do_POST(self):
         if self.path == '/upload':
             form = cgi.FieldStorage(
